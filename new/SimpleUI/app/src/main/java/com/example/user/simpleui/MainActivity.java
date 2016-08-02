@@ -19,6 +19,14 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.SaveCallback;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -52,14 +60,14 @@ public class MainActivity extends AppCompatActivity {
         listView = (ListView)findViewById(R.id.listView);
         spinner = (Spinner)findViewById(R.id.spinner);
 
-
         sharedPreferences = getSharedPreferences("UIState", Context.MODE_PRIVATE);
         editor = sharedPreferences.edit();
+
 
         radioGroup.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(RadioGroup group, int checkedId) {
-                RadioButton radioButton = (RadioButton)group.findViewById(checkedId);
+                RadioButton radioButton = (RadioButton) group.findViewById(checkedId);
                 drink = radioButton.getText().toString();
             }
         });
@@ -70,8 +78,6 @@ public class MainActivity extends AppCompatActivity {
                 editor.putString("editText", editText.getText().toString());
                 editor.apply();
 
-
-
                 if (keyCode == KeyEvent.KEYCODE_ENTER && event.getAction() == KeyEvent.ACTION_DOWN) {
                     submit(v);
                     return true;
@@ -79,25 +85,13 @@ public class MainActivity extends AppCompatActivity {
                 return false;
             }
         });
-        spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
-            @Override
-            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
-                    editor.putInt("position",spinner.getSelectedItemPosition());
-                editor.apply();
 
-            }
-
-            @Override
-            public void onNothingSelected(AdapterView<?> parent) {
-
-            }
-        });
         listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Order order = (Order) parent.getAdapter().getItem(position);
 //                Toast.makeText(MainActivity.this, "You click on" + order.note, Toast.LENGTH_SHORT).show();
-                Snackbar.make(parent, "You click on" + order.note, Snackbar.LENGTH_SHORT).setAction("OK", new View.OnClickListener() {
+                Snackbar.make(parent, "You click on" + order.getNote(), Snackbar.LENGTH_SHORT).setAction("OK", new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
 
@@ -106,19 +100,65 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+//        setupOrderHistory();
         setupListView();
         setupSpinner();
 
         restoreUIState();
 
+//        ParseObject parseObject = new ParseObject("TestObject");
+//        parseObject.put("foo", "bar");
+//        parseObject.saveInBackground(new SaveCallback() {
+//            @Override
+//            public void done(ParseException e) {
+//                if (e == null)
+//                    Toast.makeText(MainActivity.this, "'Success", Toast.LENGTH_LONG).show();
+//                else {
+//                    e.printStackTrace();
+//                    Toast.makeText(MainActivity.this, "'Failed", Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
+//
+//        ParseQuery<ParseObject> query = new ParseQuery<ParseObject>("TestObject");
+//        query.findInBackground(new FindCallback<ParseObject>() {
+//            @Override
+//            public void done(List<ParseObject> objects, ParseException e) {
+//                for (ParseObject parseObject1 : objects)
+//                {
+//                    Toast.makeText(MainActivity.this, parseObject1.getString("foo"), Toast.LENGTH_LONG).show();
+//                }
+//            }
+//        });
 
         Log.d("debug", "MainActivity OnCreate");
     }
+
     private void restoreUIState()
     {
-        editText.setText(sharedPreferences.getString("editText",""));
-        spinner.setSelection(sharedPreferences.getInt("position",0));
+        editText.setText(sharedPreferences.getString("editText", ""));
     }
+
+    private void setupOrderHistory()
+    {
+        String orderDatas = Utils.readFile(this, "history");
+        String[] orderData = orderDatas.split("\n");
+        Gson gson = new Gson();
+
+        for (String data : orderData)
+        {
+            try {
+                Order order = gson.fromJson(data, Order.class);
+                if (order != null)
+                    orders.add(order);
+            }
+            catch (JsonSyntaxException e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
     private void setupListView()
     {
 //        String[] data = new String[]{"1","2","3","4","5","6","7","8","9","10","11","12","13","14","15"};
@@ -143,11 +183,16 @@ public class MainActivity extends AppCompatActivity {
         editText.setText("");
 
         Order order = new Order();
-        order.note = text;
-        order.drinkOrders = drinkOrders;
-        order.storeInfo = (String)spinner.getSelectedItem();
+        order.setNote(text);
+        order.setDrinkOrders(drinkOrders);
+        order.setStoreInfo((String) spinner.getSelectedItem());
 
         orders.add(order);
+
+        Gson gson = new Gson();
+        String orderData = gson.toJson(order);
+        Utils.writeFile(this, "history", orderData + "\n");
+
         drinkOrders = new ArrayList<>();
         setupListView();
     }
@@ -169,9 +214,6 @@ public class MainActivity extends AppCompatActivity {
             {
                 drinkOrders = data.getParcelableArrayListExtra("results");
                 Toast.makeText(this, "Done", Toast.LENGTH_LONG).show();
-            }
-            else{
-                Toast.makeText(this, "Cancel", Toast.LENGTH_LONG).show();
             }
         }
     }
