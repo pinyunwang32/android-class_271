@@ -24,7 +24,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="M"
-        android:id="@+id/textView2"
+        android:id="@+id/textView3"
         android:layout_below="@+id/drinkNameTextView"
         android:layout_toRightOf="@+id/imageView"
         android:layout_toEndOf="@+id/imageView" />
@@ -35,15 +35,15 @@
         android:text="25"
         android:id="@+id/mPriceTextView"
         android:layout_below="@+id/drinkNameTextView"
-        android:layout_toRightOf="@+id/textView2"
-        android:layout_toEndOf="@+id/textView2"
+        android:layout_toRightOf="@+id/textView3"
+        android:layout_toEndOf="@+id/textView3"
         android:layout_marginLeft="10dp" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="L"
-        android:id="@+id/textView3"
+        android:id="@+id/textView4"
         android:layout_below="@+id/drinkNameTextView"
         android:layout_toRightOf="@+id/mPriceTextView"
         android:layout_toEndOf="@+id/mPriceTextView"
@@ -55,7 +55,7 @@
         android:text="35"
         android:id="@+id/lPriceTextView"
         android:layout_below="@+id/drinkNameTextView"
-        android:layout_toRightOf="@+id/textView3"
-        android:layout_toEndOf="@+id/textView3"
+        android:layout_toRightOf="@+id/textView4"
+        android:layout_toEndOf="@+id/textView4"
         android:layout_marginLeft="10dp" />
 </RelativeLayout>

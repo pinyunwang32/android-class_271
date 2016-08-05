@@ -98,9 +98,9 @@ public class Utils {
             if(jsonObject.getString("status").equals("OK"))
             {
                 JSONObject location = jsonObject.getJSONArray("results")
-                        .getJSONObject(0)
-                        .getJSONObject("geometry")
-                        .getJSONObject("location");
+                                                .getJSONObject(0)
+                                                .getJSONObject("geometry")
+                                                .getJSONObject("location");
 
                 double lat = location.getDouble("lat");
                 double lng = location.getDouble("lng");

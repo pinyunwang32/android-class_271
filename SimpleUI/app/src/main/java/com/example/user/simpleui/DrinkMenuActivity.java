@@ -1,5 +1,7 @@
 package com.example.user.simpleui;
 
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -9,10 +11,15 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import com.parse.FindCallback;
+import com.parse.ParseException;
+
+import org.w3c.dom.Text;
+
 import java.util.ArrayList;
 import java.util.List;
 
-public class DrinkMenuActivity extends AppCompatActivity {
+public class DrinkMenuActivity extends AppCompatActivity implements DrinkOrderDialog.OnDrinkOrderListener {
 
     ListView drinkMenuListView;
     TextView totalTextView;
@@ -24,7 +31,7 @@ public class DrinkMenuActivity extends AppCompatActivity {
 
     List<Drink> drinkList = new ArrayList<>();
 
-    List<Drink> drinkOrderList = new ArrayList<>();
+    ArrayList<DrinkOrder> drinkOrderList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,22 +43,36 @@ public class DrinkMenuActivity extends AppCompatActivity {
 
         setData();
 
-        setupDrinkMenuListView();
+        drinkOrderList = getIntent().getParcelableArrayListExtra("drinkOrderList");
+        setupTotalTextView();
+
+//        setupDrinkMenuListView();
 
         Log.d("Debug", "DrinkMenuActivity OnCreate");
     }
 
     public void setData()
     {
-        for(int i = 0; i < 4; i++)
-        {
-            Drink drink = new Drink();
-            drink.name = drinkNames[i];
-            drink.lPrice = lPrices[i];
-            drink.mPrice = mPrices[i];
-            drink.imageId = images[i];
-            drinkList.add(drink);
-        }
+        Drink.getDrinkFromLocamThenRemote(new FindCallback<Drink>() {
+            @Override
+            public void done(List<Drink> objects, ParseException e) {
+                if(e==null)
+                {
+                    drinkList = objects;
+                    setupDrinkMenuListView();
+                }
+            }
+        });
+
+//        for(int i = 0; i < 4; i++)
+//        {
+//            Drink drink = new Drink();
+//            drink.name = drinkNames[i];
+//            drink.lPrice = lPrices[i];
+//            drink.mPrice = mPrices[i];
+//            drink.imageId = images[i];
+//            drinkList.add(drink);
+//        }
     }
 
     public void setupDrinkMenuListView()
@@ -62,33 +83,52 @@ public class DrinkMenuActivity extends AppCompatActivity {
         drinkMenuListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                Drink drink = (Drink)parent.getAdapter().getItem(position);
-                drinkOrderList.add(drink);
+                Drink drink = (Drink) parent.getAdapter().getItem(position);
+                showDrinkOrderDialog(drink);
                 setupTotalTextView();
             }
         });
     }
 
+    private void  showDrinkOrderDialog(Drink drink)
+    {
+        DrinkOrder order = new DrinkOrder(drink);
+
+        for(DrinkOrder drinkOrder: drinkOrderList)
+        {
+            if(drinkOrder.getDrink().getObjectId().equals(drink.getObjectId()))
+            {
+                order = drinkOrder;
+                break;
+            }
+        }
+
+        FragmentManager fragmentManager = getFragmentManager();
+
+        FragmentTransaction ft = fragmentManager.beginTransaction();
+
+        DrinkOrderDialog dialog = DrinkOrderDialog.newInstance(order);
+
+        dialog.show(ft, "DrinkOrderDialog");
+
+    }
+
     public void setupTotalTextView()
     {
         int total = 0;
-        for (Drink drink :drinkOrderList)
+        for (DrinkOrder drinkOrder :drinkOrderList)
         {
-            total += drink.mPrice;
+            total += drinkOrder.total();
         }
 
         totalTextView.setText(String.valueOf(total));
     }
+
     public void done(View view)
     {
         Intent intent = new Intent();
+        intent.putExtra("results", drinkOrderList);
         setResult(RESULT_OK, intent);
-        finish();
-    }
-    public void goToMainActivity(View view)
-    {
-        Intent intent = new Intent();
-        setResult(RESULT_CANCELED, intent);
         finish();
     }
 
@@ -128,4 +168,19 @@ public class DrinkMenuActivity extends AppCompatActivity {
         Log.d("debug", "DrinkMenuActivity onDestroy");
     }
 
+    @Override
+    public void onDrinkOrderFinished(DrinkOrder drinkOrder) {
+        for (int i = 0 ; i < drinkOrderList.size() ; i++)
+        {
+            if(drinkOrderList.get(i).getDrink().getObjectId().equals(drinkOrder.getDrink().getObjectId()))
+            {
+                drinkOrderList.set(i, drinkOrder);
+                setupTotalTextView();
+                return;
+            }
+        }
+
+        drinkOrderList.add(drinkOrder);
+        setupTotalTextView();
+    }
 }
